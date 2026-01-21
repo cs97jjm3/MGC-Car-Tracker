@@ -32,17 +32,17 @@ async function sendDailyFailureSummary() {
 
   console.log(`⚠️  Found ${failures.length} failure(s) in the last 24 hours`);
 
-  // Group failures by car
-  const failuresByCar = {};
+  // Group failures by item
+  const failuresByItem = {};
   failures.forEach(failure => {
-    if (!failuresByCar[failure.carId]) {
-      failuresByCar[failure.carId] = {
+    if (!failuresByItem[failure.itemId]) {
+      failuresByItem[failure.itemId] = {
         name: failure.name,
         url: failure.url,
         failures: []
       };
     }
-    failuresByCar[failure.carId].failures.push({
+    failuresByItem[failure.itemId].failures.push({
       errorType: failure.errorType,
       errorMessage: failure.errorMessage,
       failedAt: failure.failedAt
@@ -54,7 +54,7 @@ async function sendDailyFailureSummary() {
     <div style="font-family: Arial, sans-serif; max-width: 800px;">
       <h2 style="color: #dc3545;">📊 Daily Failure Summary</h2>
       <p><strong>Date:</strong> ${new Date().toLocaleDateString('en-GB')}</p>
-      <p><strong>Total failures:</strong> ${failures.length} issue(s) across ${Object.keys(failuresByCar).length} car(s)</p>
+      <p><strong>Total failures:</strong> ${failures.length} issue(s) across ${Object.keys(failuresByItem).length} item(s)</p>
       <hr>
   `;
 
@@ -68,19 +68,19 @@ async function sendDailyFailureSummary() {
     'UNKNOWN_ERROR': 'Unknown error'
   };
 
-  for (const carId in failuresByCar) {
-    const car = failuresByCar[carId];
-    const firstFailure = car.failures[0];
-    const failureCount = car.failures.length;
+  for (const itemId in failuresByItem) {
+    const item = failuresByItem[itemId];
+    const firstFailure = item.failures[0];
+    const failureCount = item.failures.length;
     
     html += `
       <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 15px 0; border-radius: 5px;">
-        <h3 style="margin-top: 0;">${car.name}</h3>
+        <h3 style="margin-top: 0;">${item.name}</h3>
         <p><strong>Error:</strong> ${errorTypeDescriptions[firstFailure.errorType] || firstFailure.errorType}</p>
         <p><strong>Occurrences:</strong> ${failureCount} time(s) in last 24 hours</p>
         <p><strong>First failure:</strong> ${new Date(firstFailure.failedAt).toLocaleString('en-GB', { timeZone: 'Europe/London' })}</p>
         <p style="font-size: 12px; color: #6c757d; margin: 5px 0;">
-          <a href="${car.url}">View listing</a>
+          <a href="${item.url}">View listing</a>
         </p>
       </div>
     `;
@@ -92,7 +92,7 @@ async function sendDailyFailureSummary() {
         <h3>What to do:</h3>
         <ul>
           <li>Check each listing to see if it's still available</li>
-          <li>Remove sold items from your tracked cars</li>
+          <li>Remove sold items from your tracked items</li>
           <li>Site errors usually resolve themselves - will keep trying</li>
         </ul>
       </div>
@@ -105,7 +105,7 @@ async function sendDailyFailureSummary() {
   const mailOptions = {
     from: config.email.sender,
     to: config.email.recipients?.join(', ') || config.email.sender,
-    subject: `📊 MGC Daily: ${Object.keys(failuresByCar).length} item(s) had issues today`,
+    subject: `📊 MGC Daily: ${Object.keys(failuresByItem).length} item(s) had issues today`,
     html: html
   };
 

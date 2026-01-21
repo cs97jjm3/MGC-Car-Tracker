@@ -12,12 +12,12 @@ class EmailNotifier {
     });
   }
 
-  async sendPriceChangeAlert(carDetails, oldPrice, newPrice, recipients = null) {
+  async sendPriceChangeAlert(itemDetails, oldPrice, newPrice, recipients = null) {
     const priceChange = newPrice - oldPrice;
     const changeType = priceChange < 0 ? 'DROPPED' : 'INCREASED';
     const changeSymbol = priceChange < 0 ? '📉' : '📈';
     
-    const subject = `${changeSymbol} Price ${changeType}: ${carDetails.name}`;
+    const subject = `${changeSymbol} Price ${changeType}: ${itemDetails.name}`;
     
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px;">
@@ -26,7 +26,7 @@ class EmailNotifier {
         </h2>
         
         <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
-          <h3 style="margin-top: 0;">${carDetails.name}</h3>
+          <h3 style="margin-top: 0;">${itemDetails.name}</h3>
           
           <p style="font-size: 24px; margin: 10px 0;">
             <strong>Old Price:</strong> <span style="text-decoration: line-through;">£${oldPrice.toLocaleString()}</span>
@@ -40,20 +40,20 @@ class EmailNotifier {
             <strong>Change:</strong> ${priceChange < 0 ? '-' : '+'}£${Math.abs(priceChange).toLocaleString()}
           </p>
           
-          ${carDetails.mileage ? `<p><strong>Mileage:</strong> ${carDetails.mileage.toLocaleString()} miles</p>` : ''}
+          ${itemDetails.mileage ? `<p><strong>Mileage:</strong> ${itemDetails.mileage.toLocaleString()} miles</p>` : ''}
         </div>
         
         <p>
-          <a href="${carDetails.url}" 
+          <a href="${itemDetails.url}" 
              style="display: inline-block; background-color: #007bff; color: white; 
                     padding: 12px 24px; text-decoration: none; border-radius: 5px; 
                     font-weight: bold;">
-            View Car Listing
+            View Item Listing
           </a>
         </p>
         
         <p style="color: #6c757d; font-size: 12px; margin-top: 30px;">
-          URL: ${carDetails.url}<br>
+          URL: ${itemDetails.url}<br>
           Checked: ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })}
         </p>
       </div>
@@ -85,7 +85,7 @@ class EmailNotifier {
     
     let summaryHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 800px;">
-        <h2 style="color: #007bff;">Weekly Car Price Summary</h2>
+        <h2 style="color: #007bff;">Weekly Price Summary</h2>
         <p><strong>Week ending:</strong> ${new Date().toLocaleDateString('en-GB')}</p>
         <hr>
     `;
@@ -134,7 +134,7 @@ class EmailNotifier {
       <hr>
       <div style="background-color: #e9ecef; padding: 15px; border-radius: 5px;">
         <h3>This Week's Summary</h3>
-        <p>• <strong>${totalChanges}</strong> car(s) changed price</p>
+        <p>• <strong>${totalChanges}</strong> item(s) changed price</p>
     `;
     
     if (biggestDrop.car) {
@@ -146,7 +146,7 @@ class EmailNotifier {
     }
     
     if (totalChanges === 0) {
-      summaryHtml += `<p>• 🔄 All tracked cars maintained their prices</p>`;
+      summaryHtml += `<p>• 🔄 All tracked items maintained their prices</p>`;
     }
     
     summaryHtml += `
@@ -189,7 +189,7 @@ class EmailNotifier {
     const mailOptions = {
       from: this.config.email.sender,
       to: this.config.weeklyEmail?.recipients?.join(', ') || this.config.email.recipients?.join(', '),
-      subject: `📈 Weekly Car Price Summary - ${totalChanges} change(s)`,
+      subject: `📈 MGC Weekly Summary - ${totalChanges} change(s)`,
       html: summaryHtml
     };
 
@@ -282,16 +282,16 @@ class EmailNotifier {
     const mailOptions = {
       from: this.config.email.sender,
       to: emailRecipients.join(', '),
-      subject: '🚗 MGC Car Tracker - Test Email',
+      subject: '🏷️ MGC Price Monitor - Test Email',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px;">
-          <h2>MGC Car Tracker is Running!</h2>
-          <p>This is a test email to confirm your car price monitoring is set up correctly.</p>
+          <h2>MGC Price Monitor is Running!</h2>
+          <p>This is a test email to confirm your price monitoring is set up correctly.</p>
           <p><strong>Monitoring schedule:</strong></p>
           <ul>
             ${this.config.schedule.times.map(time => `<li>${time}</li>`).join('')}
           </ul>
-          <p>You'll receive alerts when any tracked car's price changes.</p>
+          <p>You'll receive alerts when any tracked item's price changes.</p>
           <p style="color: #6c757d; font-size: 12px; margin-top: 30px;">
             Sent: ${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })}
           </p>

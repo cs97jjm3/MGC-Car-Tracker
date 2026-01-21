@@ -6,18 +6,18 @@ const sendWeeklySummary = require('./weekly-summary');
 const sendDailyFailureSummary = require('./daily-failure-summary');
 const DashboardServer = require('./dashboard');
 
-console.log('🚗 MGC Car Tracker Starting...\n');
+console.log('🏷️ MGC Price Monitor Starting...\n');
 
 // Load config
 const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
 
 console.log('📋 Configuration:');
 console.log(`   Sender: ${config.email.sender}`);
-console.log(`   Monitoring ${config.cars.length} car(s):`);
-config.cars.forEach(car => {
-  console.log(`   - ${car.name} (alerts: ${car.recipients ? car.recipients.join(', ') : 'global'})`);
-  if (car.thresholds) {
-    console.log(`     Thresholds: £${car.thresholds.minAmount}+ or ${car.thresholds.minPercent}%+`);
+console.log(`   Monitoring ${config.items.length} item(s):`);
+config.items.forEach(item => {
+  console.log(`   - ${item.name} [${item.category}] (alerts: ${item.recipients ? item.recipients.join(', ') : 'global'})`);
+  if (item.thresholds) {
+    console.log(`     Thresholds: £${item.thresholds.minAmount}+ or ${item.thresholds.minPercent}%+`);
   }
 });
 console.log('\n⏰ Schedule:');
@@ -82,7 +82,7 @@ if (config.failureAlerts?.dailySummary) {
 }
 
 console.log('\n' + '='.repeat(60));
-console.log('🚀 MGC Car Tracker is now running!');
+console.log('🚀 MGC Price Monitor is now running!');
 console.log('   Press Ctrl+C to stop');
 console.log('='.repeat(60) + '\n');
 
@@ -96,6 +96,6 @@ checkPrices();
 
 // Keep the process running
 process.on('SIGINT', () => {
-  console.log('\n\n👋 Shutting down MGC Car Tracker...');
+  console.log('\n\n👋 Shutting down MGC Price Monitor...');
   process.exit(0);
 });

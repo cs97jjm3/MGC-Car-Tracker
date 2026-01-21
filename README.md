@@ -1,31 +1,31 @@
-# MGC Car Tracker
+# 🏷️ MGC Price Monitor
 
-Automated car price monitoring tool that tracks multiple vehicle listings and sends email alerts when prices change. Built for families monitoring car purchases with configurable schedules, smart thresholds, and visual dashboard.
+Universal automated price monitoring tool that tracks any items (cars, electronics, furniture, toys, and more) and sends email alerts when prices change. Built for smart shoppers with configurable schedules, thresholds, and visual dashboard.
 
-## Features
+## ✨ Features
 
-- **Smart Price Alerts**: Configurable thresholds - only alert for significant changes (£100+ or 5%+)
-- **Per-Car Recipients**: Different family members get alerts for cars they're interested in
-- **Weekly Summary Emails**: Comprehensive overview of all tracked cars and price trends
-- **Real-time Dashboard**: Visual price history graphs and current status at http://localhost:3739
-- **Automated Scheduling**: UK timezone-aware with quiet hours (11pm-6am)
-- **Price History**: SQLite database stores complete pricing history with timestamps
-- **Multi-Car Support**: Track unlimited vehicles from any dealer website
-- **No-Compile Installation**: Pure JavaScript - no Visual Studio or build tools required
-- **Robust Error Handling**: Automatic retries, failure tracking, and intelligent alerts
-- **Failure Notifications**: Immediate alerts for sold cars, daily and weekly failure summaries
+- **🎯 Universal Tracking**: Monitor ANY category - cars, electronics, furniture, toys, sports equipment
+- **📧 Smart Alerts**: Configurable thresholds - only alert for significant changes (£100+ or 5%+)
+- **👥 Per-Item Recipients**: Different people get alerts for items they're interested in
+- **📊 Real-time Dashboard**: Visual price history graphs at http://localhost:3739
+- **🗓️ Weekly Summaries**: Comprehensive overview of all tracked items and price trends
+- **⏰ Automated Scheduling**: UK timezone-aware with customizable check times
+- **💾 Price History**: SQLite database stores complete pricing history
+- **🔒 Enhanced Scraping**: Bypasses basic bot detection on major retailers
+- **🛡️ Robust Error Handling**: Automatic retries, failure tracking, and intelligent alerts
+- **🌐 Web Management**: Add/pause/delete items through browser interface
 
-## Quick Start
+## 🚀 Quick Start
 
 ```bash
 # Clone and install
 git clone [repository-url]
-cd MGC-Car-Tracker
+cd MGC-Price-Monitor
 npm install
 
 # Configure
 cp config.example.json config.json
-# Edit config.json with your cars and Gmail settings
+# Edit config.json with your items and Gmail settings
 
 # Test
 npm run check
@@ -34,9 +34,9 @@ npm run check
 npm start
 ```
 
-Once running, visit **http://localhost:3739** for the visual dashboard.
+Once running, visit **http://localhost:3739** for the dashboard.
 
-## Configuration
+## ⚙️ Configuration
 
 Edit `config.json`:
 
@@ -46,11 +46,12 @@ Edit `config.json`:
     "sender": "your-gmail@gmail.com",
     "password": "your-gmail-app-password"
   },
-  "cars": [
+  "items": [
     {
-      "url": "https://dealer.com/car-listing-url",
-      "name": "Car Make Model Year",
-      "recipients": ["family1@email.com", "family2@email.com"],
+      "url": "https://dealer.com/item-url",
+      "name": "Item Description",
+      "category": "Cars",
+      "recipients": ["buyer1@email.com", "buyer2@email.com"],
       "thresholds": {
         "minAmount": 100,
         "minPercent": 5
@@ -58,17 +59,29 @@ Edit `config.json`:
     }
   ],
   "schedule": {
-    "times": ["06:00", "12:00", "18:00", "19:00", "20:00", "21:00", "22:00"],
+    "times": ["06:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"],
     "timezone": "Europe/London"
   },
   "weeklyEmail": {
     "enabled": true,
     "dayOfWeek": "sunday",
-    "time": "18:00",
-    "recipients": ["person1@email.com"]
+    "time": "18:00"
   }
 }
 ```
+
+### Categories
+
+Organize your tracked items:
+- 🚗 Cars
+- 🪑 Furniture  
+- 🍳 Kitchen
+- 🧸 Toys
+- 💻 Electronics
+- 🌱 Garden
+- 👕 Clothing
+- ⚽ Sports
+- ...or any custom category!
 
 ### Smart Thresholds
 
@@ -78,28 +91,14 @@ Prevent email spam from minor price fluctuations:
 - Alerts sent if **either** threshold is met
 - Only applies to price drops (increases always alert)
 
-### Per-Car Recipients
-
-Each car can have different people watching it:
-```json
-{
-  "name": "Car for Son",
-  "recipients": ["dad@email.com", "son@email.com"]
-},
-{
-  "name": "Car for Daughter", 
-  "recipients": ["mum@email.com", "daughter@email.com"]
-}
-```
-
-## Gmail Setup
+## 📧 Gmail Setup
 
 1. Enable 2-Step Verification in your Google Account
 2. Go to Security → App passwords
 3. Generate app password for "Mail"
 4. Use this password in config.json (not your regular Gmail password)
 
-## Usage
+## 🎮 Usage
 
 **Continuous monitoring:**
 ```bash
@@ -118,63 +117,114 @@ npm run check
 node test-email.js
 ```
 
-**Manual weekly summary:**
-```bash
-node weekly-summary.js
-```
+## 🌐 Web Dashboard
 
-## Error Handling & Failure Alerts
+Access at **http://localhost:3739**
+
+### Main Dashboard
+- Real-time prices for all tracked items
+- Price change indicators (📉📈➡️)
+- Category badges
+- Quick links to item listings
+- Auto-refresh every 5 minutes
+
+### Management Interface (`/manage`)
+Add items through the browser:
+1. Click "Add New Item"
+2. Enter item URL and name
+3. Select category
+4. Set optional recipient emails and thresholds
+5. Click "Add Item" - automatically saves to config.json
+
+Manage existing items:
+- **Pause**: Temporarily stop checking an item
+- **Resume**: Restart monitoring  
+- **Delete**: Remove item completely
+
+### Individual Item Pages (`/item/N`)
+Click any item name to see:
+- Complete price history table
+- Interactive price trend graph
+- All recorded price changes with dates
+- Current statistics (highest, lowest, range)
+
+## 🛡️ Error Handling
 
 ### Automatic Retry Logic
-The tracker automatically handles temporary errors with exponential backoff:
-- **Attempt 1**: Fails → wait 2 seconds → retry
-- **Attempt 2**: Fails → wait 4 seconds → retry  
-- **Attempt 3**: Fails → log failure to database
+The tracker handles temporary errors with intelligent retries:
+- **Attempt 1**: Fails → wait 2s → retry with different user agent
+- **Attempt 2**: Fails → wait 4s → retry  
+- **Attempt 3**: Fails → log failure
 
-Permanent errors (404, 403) don't retry - immediate failure logged.
+### Failure Types
+- **404 Not Found**: Item likely sold or removed
+- **403 Forbidden**: Site blocking access (enhanced scraper helps bypass)
+- **Parse Error**: Price format changed
+- **Timeout**: Network issues (auto-retry)
+- **500 Server Error**: Site down (auto-retry)
 
-### Failure Classification
-- **404 Not Found**: Car likely sold or listing removed
-- **403 Forbidden**: Site blocking automated access
-- **Parse Error**: Page structure changed, price undetectable
-- **Timeout/Connection**: Network issues (retries automatically)
-- **500 Server Error**: Dealer website down (retries automatically)
+### Enhanced Bot Detection Bypass
+- Multiple rotating user agents (Chrome, Firefox, Safari)
+- Complete browser headers (Accept, Referer, DNT)
+- Random delays between attempts
+- Works on most major retailers including Lego, Amazon marketplace dealers, etc.
 
-### Immediate Alerts (3 Consecutive Failures)
-When a car fails 3 checks in a row, you get an immediate email:
-- Explains what the error means
-- Suggests next actions (check listing, remove if sold)
-- Includes direct link to listing
+### Alert System
+**Immediate Alert** (3 consecutive failures):
+- Email explaining the error
+- Direct link to check item
+- Suggested actions
 
-### Daily Failure Summary (6pm)
-If enabled, receive a daily digest of:
-- All NEW failures that occurred today
-- Error types and affected cars
-- Number of failure attempts per car
-- **Only sent if failures exist** (no spam on good days)
+**Daily Summary** (6pm):
+- All failures that occurred today
+- Only sent if failures exist
 
-### Weekly Failure Summary (Sunday 6pm)
-Included in your regular weekly summary:
-- Cars that haven't updated in 7+ days
-- Total failure count and duration
-- Suggestion to check and remove sold items
+**Weekly Summary** (Sunday 6pm):
+- Items with 7+ days of failures
+- Suggested items to remove
 
-### Circuit Breaker (5+ Failures)
-After 5 consecutive failures:
-- Stops checking that car for 24 hours
-- Prevents hammering dead sites
-- Automatically resumes checking after wait period
-- Listed in weekly "Items Needing Attention" section
+## 📊 Database
 
-### Configuration
-In `config.json`:
+Price history stored in `item-prices.db` (SQLite):
+- All monitored items with complete price history
+- UK timezone timestamps
+- Mileage tracking (for cars)
+- Category organization
+
+## 🔧 Advanced Configuration
+
+### Per-Item Recipients
+Each item can have different watchers:
+```json
+{
+  "name": "Lego Death Star",
+  "category": "Toys",
+  "recipients": ["dad@email.com", "son@email.com"]
+},
+{
+  "name": "Garden Furniture Set",
+  "category": "Garden", 
+  "recipients": ["mum@email.com", "daughter@email.com"]
+}
+```
+
+### Custom Schedules
+```json
+{
+  "schedule": {
+    "times": ["06:00", "12:00", "18:00"],
+    "timezone": "Europe/London"
+  }
+}
+```
+
+### Failure Alert Configuration
 ```json
 {
   "failureAlerts": {
     "immediate": true,
     "dailySummary": true,
     "dailySummaryTime": "18:00",
-    "weeklySummary": true,
     "circuitBreaker": {
       "consecutiveFailures": 5,
       "waitHours": 24
@@ -183,144 +233,34 @@ In `config.json`:
 }
 ```
 
-## Email Features
-
-### Price Change Alerts
-When prices change and meet thresholds, recipients receive HTML emails showing:
-- Old vs new price with visual indicators (📉📈)
-- Exact change amount and percentage
-- Direct link to car listing
-- Current mileage if available
-- Timestamp of change
-
-### Weekly Summary
-Every Sunday at 6pm (configurable):
-- All tracked cars and their week-over-week changes
-- Biggest price drops and increases
-- Summary statistics
-- "No changes" confirmation if all prices stayed the same
-
-## Web Dashboard
-
-Visual interface showing:
-- **Real-time prices** for all tracked cars
-- **Price history graphs** with Chart.js
-- **Change indicators** (📉📈➡️) 
-- **Direct links** to car listings
-- **Alert recipients** for each car
-- **Auto-refresh** every 5 minutes
-
-Access at **http://localhost:3739** when tracker is running.
-
-### Dashboard Management Features
-
-**Management Interface** - Access at **http://localhost:3739/manage**
-
-Add cars through the web interface instead of editing config.json:
-- Click "Add Car" button
-- Enter car URL, name, and recipient email addresses
-- Car is added to both config.json and database automatically
-
-Pause/Resume monitoring:
-- Click "Pause" to temporarily stop checking a car
-- Click "Resume" to restart monitoring
-- Paused cars stay in your config but won't be checked or send alerts
-
-Delete cars:
-- Click "Delete" to remove a car completely
-- Removes from config.json and hides from dashboard
-- Price history stays in database
-
-**Individual Car Pages** - Click any car name to see:
-- Complete price history table
-- Price trend graph
-- All recorded price changes with dates
-- Current mileage tracking
-
-**Manual Pause via Config** - Edit config.json directly:
-```json
-{
-  "name": "Car Name",
-  "url": "https://...",
-  "disabled": true,
-  "recipients": ["email@example.com"]
-}
-```
-Set `"disabled": true` to pause monitoring without deleting the car.
-
-## Database
-
-Price history stored in `car-prices.db` (SQLite):
-- All monitored vehicles with complete price history
-- Timestamps in UK timezone
-- Mileage tracking where available
-- Description change detection
-
-## Scripts
-
-| Command | Purpose |
-|---------|---------|
-| `npm start` | Full system (monitoring + dashboard + weekly emails) |
-| `npm run check` | Single price check |
-| `node test-email.js` | Test email configuration |
-| `node test-price-change.js` | Simulate price change alert |
-| `node weekly-summary.js` | Generate weekly summary |
-
-## Background Service
-
-### Windows Task Scheduler
-1. Open Task Scheduler
-2. Create Basic Task → "When computer starts"  
-3. Action: Start program
-   - Program: `C:\Program Files\nodejs\node.exe`
-   - Arguments: `index.js`
-   - Start in: `[path-to-MGC-Car-Tracker]`
-
-### Linux/Mac
-Create systemd service or use PM2 for production deployments.
-
-## File Structure
+## 📁 File Structure
 
 ```
-MGC Car Tracker/
-├── index.js              # Main scheduler + dashboard launcher
-├── check-prices.js       # Price checking with smart thresholds
-├── database.js           # SQLite database handler
-├── scraper.js           # Web scraping engine
-├── email.js             # Gmail notifications + weekly summaries
-├── dashboard.js         # Web dashboard server
-├── weekly-summary.js    # Weekly email generation
-├── config.json          # Configuration (not in git)
-├── config.example.json  # Configuration template
-├── test-*.js           # Testing utilities
-├── car-prices.db        # Price history database
-└── README.md            # This documentation
+MGC Price Monitor/
+├── index.js              # Main scheduler + launcher
+├── check-prices.js       # Price checking engine
+├── database.js           # SQLite handler
+├── scraper.js           # Enhanced web scraper
+├── email.js             # Gmail notifications
+├── dashboard.js         # Web interface server
+├── weekly-summary.js    # Weekly report generator
+├── daily-failure-summary.js  # Daily failure digest
+├── config.json          # Your configuration
+├── item-prices.db       # Price history database
+├── logo.png             # MGC logo
+└── README.md            # This file
 ```
 
-## Technical Details
+## 🔍 Technical Details
 
-- **Web Scraping**: Cheerio + Axios with user-agent spoofing
+- **Web Scraping**: Cheerio + Axios with anti-bot measures
 - **Database**: sql.js (pure JavaScript SQLite)
 - **Email**: Nodemailer with Gmail SMTP
 - **Scheduling**: node-cron with timezone support  
-- **Dashboard**: Chart.js for price history visualization
-- **Error Handling**: Comprehensive logging and retry logic
+- **Dashboard**: Chart.js for visualizations
+- **Bot Detection Bypass**: Rotating user agents, full browser headers
 
-## Extending
-
-**Add more cars**: Use web interface at http://localhost:3739/manage OR edit config.json
-
-**Pause monitoring**: Use web interface "Pause" button OR set `"disabled": true` in config.json
-
-**Different thresholds**: Set per-car minAmount/minPercent values in config.json
-
-**Custom schedules**: Modify `schedule.times` array in config.json
-
-**Different dashboard port**: Change `this.port` in dashboard.js
-
-**Multiple dealers**: Scraper automatically adapts to different website structures
-
-## Troubleshooting
+## 🛠️ Troubleshooting
 
 **Emails not sending:**
 - Verify Gmail app password (not regular password)
@@ -328,40 +268,39 @@ MGC Car Tracker/
 - Ensure 2-step verification enabled
 
 **Price not detected:**
-- Website structure may have changed
-- Check console output for scraping errors
-- Verify URL accessibility
+- Website structure may differ
+- Check console output for errors
+- Try different item URL
 
 **Dashboard not loading:**
-- Check port 3739 isn't blocked
+- Check port 3739 isn't in use
 - Verify tracker is running (`npm start`)
-- Check console for dashboard server errors
 
-**Thresholds not working:**
-- Only applies to price drops (not increases)
-- Must meet minAmount OR minPercent (whichever comes first)
-- Check console output shows threshold evaluation
+**403 Forbidden errors:**
+- Enhanced scraper retries with different signatures
+- Some sites still may block (use smaller dealers)
 
-## License
+## 📜 License
 
-MIT License - built for practical family use
+MIT License
 
-## Author
+## 👤 Author
 
-James Murrell - Business Analyst specializing in practical automation solutions
+James Murrell - Business Analyst specializing in practical automation
+
+## 🎉 Version 2.0 Features
+
+- ✅ Universal item tracking (not just cars!)
+- ✅ Category organization
+- ✅ Enhanced bot detection bypass
+- ✅ Web-based item management
+- ✅ Individual item detail pages
+- ✅ Smart price thresholds
+- ✅ Per-item email recipients
+- ✅ Real-time dashboard with graphs
+- ✅ Comprehensive failure handling
+- ✅ Weekly and daily summaries
 
 ---
 
-**Latest Version Features:**
-- ✅ Smart price thresholds (reduce email noise)
-- ✅ Per-car email recipients  
-- ✅ Weekly summary emails
-- ✅ Real-time web dashboard with price graphs
-- ✅ Web-based car management (add/delete/pause cars)
-- ✅ Individual car detail pages with complete history
-- ✅ Robust error handling with automatic retries
-- ✅ Immediate failure alerts (3 consecutive failures)
-- ✅ Daily and weekly failure summaries
-- ✅ Circuit breaker pattern (5+ failures)
-- ✅ Intelligent error classification and logging
-- ✅ Improved console output and logging
+**Track anything. Save money. Stay informed.** 🏷️

@@ -21,21 +21,21 @@ async function sendWeeklySummary() {
   
   const emailNotifier = new EmailNotifier(config);
 
-  // Get price history for each car
+  // Get price history for each item
   const priceHistory = {};
-  for (const car of config.cars) {
-    const carId = db.getCarId(car.url);
-    if (carId) {
-      priceHistory[car.url] = db.getPriceHistory(carId, 50); // Get more history for weekly analysis
+  for (const item of config.items) {
+    const itemId = db.getItemId(item.url);
+    if (itemId) {
+      priceHistory[item.url] = db.getPriceHistory(itemId, 50); // Get more history for weekly analysis
     }
   }
 
-  console.log(`📈 Analyzing ${config.cars.length} car(s) for weekly changes...`);
+  console.log(`📈 Analyzing ${config.items.length} item(s) for weekly changes...`);
   
-  // Get cars with persistent failures
-  const persistentFailures = db.getCarsWithPersistentFailures(7);
+  // Get items with persistent failures
+  const persistentFailures = db.getItemsWithPersistentFailures(7);
   
-  const success = await emailNotifier.sendWeeklySummary(config.cars, priceHistory, persistentFailures);
+  const success = await emailNotifier.sendWeeklySummary(config.items, priceHistory, persistentFailures);
   
   if (success) {
     console.log('✅ Weekly summary sent successfully!');

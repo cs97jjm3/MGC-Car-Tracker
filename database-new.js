@@ -19,7 +19,7 @@ class PriceDatabase {
       this.db = new SQL.Database();
     }
 
-    // Create tables
+    // Create items table with category support
     this.db.run(`
       CREATE TABLE IF NOT EXISTS items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -184,9 +184,9 @@ class PriceDatabase {
     const cutoffStr = cutoff.toISOString().slice(0, 19).replace('T', ' ');
     
     const result = this.db.exec(`
-      SELECT f.item_id, c.name, c.url, f.error_type, f.error_message, f.failed_at
+      SELECT f.item_id, i.name, i.url, f.error_type, f.error_message, f.failed_at
       FROM scrape_failures f
-      JOIN items c ON f.item_id = c.id
+      JOIN items i ON f.item_id = i.id
       WHERE f.failed_at > ?
       ORDER BY f.failed_at DESC
     `, [cutoffStr]);
@@ -235,16 +235,16 @@ class PriceDatabase {
     const cutoffStr = cutoff.toISOString().slice(0, 19).replace('T', ' ');
     
     const result = this.db.exec(`
-      SELECT c.id, c.name, c.url, MIN(f.failed_at) as first_failure, COUNT(*) as failure_count
-      FROM items c
-      JOIN scrape_failures f ON c.id = f.item_id
+      SELECT i.id, i.name, i.url, MIN(f.failed_at) as first_failure, COUNT(*) as failure_count
+      FROM items i
+      JOIN scrape_failures f ON i.id = f.item_id
       WHERE f.failed_at > ?
       AND NOT EXISTS (
         SELECT 1 FROM price_history p
-        WHERE p.item_id = c.id
+        WHERE p.item_id = i.id
         AND p.checked_at > f.failed_at
       )
-      GROUP BY c.id, c.name, c.url
+      GROUP BY i.id, i.name, i.url
       HAVING MIN(f.failed_at) <= ?
       ORDER BY first_failure ASC
     `, [cutoffStr, cutoffStr]);

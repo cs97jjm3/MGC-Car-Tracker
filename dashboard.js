@@ -17,34 +17,34 @@ class DashboardServer {
       } else if (req.url === '/manage') {
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(await this.generateManagePage());
-      } else if (req.url.startsWith('/car/')) {
-        const carIndex = parseInt(req.url.split('/car/')[1]);
+      } else if (req.url.startsWith('/item/')) {
+        const itemIndex = parseInt(req.url.split('/item/')[1]);
         res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.end(await this.generateCarPage(carIndex));
+        res.end(await this.generateItemPage(itemIndex));
       } else if (req.url === '/api/data') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(await this.getDashboardData()));
-      } else if (req.url === '/api/add-car' && req.method === 'POST') {
+      } else if (req.url === '/api/add-item' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => body += chunk.toString());
         req.on('end', async () => {
-          const result = await this.addCar(JSON.parse(body));
+          const result = await this.addItem(JSON.parse(body));
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(result));
         });
-      } else if (req.url === '/api/delete-car' && req.method === 'POST') {
+      } else if (req.url === '/api/delete-item' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => body += chunk.toString());
         req.on('end', async () => {
-          const result = await this.deleteCar(JSON.parse(body));
+          const result = await this.deleteItem(JSON.parse(body));
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(result));
         });
-      } else if (req.url === '/api/toggle-car' && req.method === 'POST') {
+      } else if (req.url === '/api/toggle-item' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => body += chunk.toString());
         req.on('end', async () => {
-          const result = await this.toggleCar(JSON.parse(body));
+          const result = await this.toggleItem(JSON.parse(body));
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(result));
         });
@@ -63,106 +63,107 @@ class DashboardServer {
     });
   }
 
-  async addCar(carData) {
+  async addItem(itemData) {
     try {
-      if (!carData.url || !carData.name) {
+      if (!itemData.url || !itemData.name) {
         return { success: false, message: 'URL and name are required' };
       }
 
       const configPath = path.join(__dirname, 'config.json');
       const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
       
-      const recipients = carData.recipients 
-        ? carData.recipients.split(',').map(email => email.trim()).filter(email => email.length > 0)
+      const recipients = itemData.recipients 
+        ? itemData.recipients.split(',').map(email => email.trim()).filter(email => email.length > 0)
         : config.email.recipients;
       
-      const newCar = {
-        url: carData.url.trim(),
-        name: carData.name.trim(),
+      const newItem = {
+        url: itemData.url.trim(),
+        name: itemData.name.trim(),
+        category: itemData.category || 'General',
         recipients: recipients
       };
       
-      if (carData.minAmount || carData.minPercent) {
-        newCar.thresholds = {
-          minAmount: parseInt(carData.minAmount) || 100,
-          minPercent: parseInt(carData.minPercent) || 5
+      if (itemData.minAmount || itemData.minPercent) {
+        newItem.thresholds = {
+          minAmount: parseInt(itemData.minAmount) || 100,
+          minPercent: parseInt(itemData.minPercent) || 5
         };
       }
       
-      const existingCar = config.cars.find(car => car.url === newCar.url);
-      if (existingCar) {
-        return { success: false, message: 'This car URL is already being tracked' };
+      const existingItem = config.items.find(item => item.url === newItem.url);
+      if (existingItem) {
+        return { success: false, message: 'This item URL is already being tracked' };
       }
       
-      config.cars.push(newCar);
+      config.items.push(newItem);
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
       
       const db = new PriceDatabase();
       await db.initialize();
-      db.addCar(newCar.url, newCar.name);
+      db.addItem(newItem.url, newItem.name, newItem.category);
       db.close();
       
       return { 
         success: true, 
-        message: 'Car added successfully! Click "Reload Config" below to begin monitoring immediately.',
-        car: newCar 
+        message: 'Item added successfully! Click "Reload Config" below to begin monitoring immediately.',
+        item: newItem 
       };
       
     } catch (error) {
-      console.error('Error adding car:', error);
-      return { success: false, message: 'Failed to add car: ' + error.message };
+      console.error('Error adding item:', error);
+      return { success: false, message: 'Failed to add item: ' + error.message };
     }
   }
 
-  async deleteCar(carData) {
+  async deleteItem(itemData) {
     try {
       const configPath = path.join(__dirname, 'config.json');
       const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
       
-      const carIndex = config.cars.findIndex(car => car.url === carData.url);
-      if (carIndex === -1) {
-        return { success: false, message: 'Car not found' };
+      const itemIndex = config.items.findIndex(item => item.url === itemData.url);
+      if (itemIndex === -1) {
+        return { success: false, message: 'Item not found' };
       }
       
-      const removedCar = config.cars[carIndex];
-      config.cars.splice(carIndex, 1);
+      const removedItem = config.items[itemIndex];
+      config.items.splice(itemIndex, 1);
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
       
       return { 
         success: true, 
-        message: `"${removedCar.name}" removed from monitoring. Click "Reload Config" below to apply immediately.`,
-        car: removedCar
+        message: `"${removedItem.name}" removed from monitoring. Click "Reload Config" below to apply immediately.`,
+        item: removedItem
       };
       
     } catch (error) {
-      console.error('Error deleting car:', error);
-      return { success: false, message: 'Failed to delete car: ' + error.message };
+      console.error('Error deleting item:', error);
+      return { success: false, message: 'Failed to delete item: ' + error.message };
     }
   }
 
-  async toggleCar(carData) {
+  async toggleItem(itemData) {
     try {
       const configPath = path.join(__dirname, 'config.json');
       const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
       
-      const car = config.cars.find(car => car.url === carData.url);
-      if (!car) {
-        return { success: false, message: 'Car not found' };
+      const item = config.items.find(item => item.url === itemData.url);
+      if (!item) {
+        return { success: false, message: 'Item not found' };
       }
       
-      car.disabled = !car.disabled;
+      item.disabled = !item.disabled;
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
       
-      const status = car.disabled ? 'paused' : 'resumed';
+      const status = item.disabled ? 'paused' : 'resumed';
       return { 
         success: true, 
-        message: `"${car.name}" monitoring ${status}. Click 'Reload Config' to apply immediately.`,
-        car: car
+        message: `"${item.name}" monitoring ${status}. Click 'Reload Config' to apply immediately.`,
+        item: item
       };
       
     } catch (error) {
-      console.error('Error toggling car:', error);
-      return { success: false, message: 'Failed to toggle car: ' + error.message };
+      console.error('Error toggling item:', error);
+      return { success: false, message: 'Failed to toggle item: ' + error.message };
     }
   }
 
@@ -174,12 +175,12 @@ class DashboardServer {
       this.config = newConfig;
       
       console.log('🔄 Configuration reloaded from dashboard');
-      console.log(`📋 Now tracking ${newConfig.cars.length} car(s)`);
+      console.log(`📋 Now tracking ${newConfig.items.length} item(s)`);
       
       return { 
         success: true, 
-        message: `Configuration reloaded! Now tracking ${newConfig.cars.length} car(s). Changes will apply on next scheduled check.`,
-        carCount: newConfig.cars.length
+        message: `Configuration reloaded! Now tracking ${newConfig.items.length} item(s). Changes will apply on next scheduled check.`,
+        itemCount: newConfig.items.length
       };
       
     } catch (error) {
@@ -193,28 +194,29 @@ class DashboardServer {
     await db.initialize();
     
     const data = {
-      cars: [],
+      items: [],
       lastUpdated: new Date().toISOString()
     };
 
-    for (const car of this.config.cars) {
-      const carId = db.getCarId(car.url);
-      if (carId) {
-        const history = db.getPriceHistory(carId, 30);
+    for (const item of this.config.items) {
+      const itemId = db.getItemId(item.url);
+      if (itemId) {
+        const history = db.getPriceHistory(itemId, 30);
         const latest = history[0];
         
-        data.cars.push({
-          name: car.name,
-          url: car.url,
+        data.items.push({
+          name: item.name,
+          url: item.url,
+          category: item.category || 'General',
           currentPrice: latest?.price,
-          disabled: car.disabled || false,
-          thresholds: car.thresholds,
+          disabled: item.disabled || false,
+          thresholds: item.thresholds,
           priceHistory: history.map(h => ({
             price: h.price,
             date: h.checked_at,
             mileage: h.mileage
           })),
-          recipients: car.recipients || ['global']
+          recipients: item.recipients || ['global']
         });
       }
     }
@@ -223,20 +225,28 @@ class DashboardServer {
     return data;
   }
 
-  async generateCarPage(carIndex) {
+  async generateItemPage(itemIndex) {
     const data = await this.getDashboardData();
-    const car = data.cars[carIndex];
+    const item = data.items[itemIndex];
     
-    if (!car) {
-      return `<h1>Car not found</h1><a href="/">← Back to Dashboard</a>`;
+    if (!item) {
+      return `<h1>Item not found</h1><a href="/">← Back to Dashboard</a>`;
     }
+
+    // Calculate stats
+    const highestPrice = item.priceHistory.length >= 2 ? 
+      '£' + Math.max(...item.priceHistory.map(h => h.price)).toLocaleString() : 'N/A';
+    const lowestPrice = item.priceHistory.length >= 2 ? 
+      '£' + Math.min(...item.priceHistory.map(h => h.price)).toLocaleString() : 'N/A';
+    const priceRange = item.priceHistory.length >= 2 ? 
+      '£' + Math.abs(Math.max(...item.priceHistory.map(h => h.price)) - Math.min(...item.priceHistory.map(h => h.price))).toLocaleString() : 'N/A';
 
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${car.name} - MGC Car Tracker</title>
+    <title>${item.name} - MGC Price Monitor</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; }
@@ -246,12 +256,8 @@ class DashboardServer {
         .nav { text-align: center; margin-bottom: 30px; }
         .nav a { display: inline-block; margin: 0 15px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }
         .nav a:hover { background: #0056b3; }
-        .car-details { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .item-details { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
         .price-current { font-size: 36px; font-weight: bold; color: #007bff; margin: 15px 0; }
-        .price-change { padding: 8px 15px; border-radius: 6px; font-weight: bold; margin: 15px 0; font-size: 18px; }
-        .price-drop { background-color: #d4edda; color: #155724; }
-        .price-rise { background-color: #f8d7da; color: #721c24; }
-        .price-same { background-color: #e2e3e5; color: #383d41; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
         .stat-card { background: #f8f9fa; padding: 15px; border-radius: 5px; text-align: center; }
         .stat-value { font-size: 24px; font-weight: bold; color: #007bff; }
@@ -260,8 +266,8 @@ class DashboardServer {
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
         .info-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .info-card h3 { margin-top: 0; color: #333; }
-        .car-link { display: inline-block; margin-top: 15px; padding: 10px 20px; background: #28a745; color: white; text-decoration: none; border-radius: 5px; }
-        .car-link:hover { background: #218838; }
+        .item-link { display: inline-block; margin-top: 15px; padding: 10px 20px; background: #28a745; color: white; text-decoration: none; border-radius: 5px; }
+        .item-link:hover { background: #218838; }
         .history-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .history-table th, .history-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #ddd; }
         .history-table th { background-color: #f8f9fa; font-weight: bold; }
@@ -270,40 +276,34 @@ class DashboardServer {
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚗 ${car.name}</h1>
-            <p>Detailed price monitoring and history</p>
+            <h1>🏷️ ${item.name}</h1>
+            <p>${item.category} - Detailed price monitoring</p>
         </div>
         
         <div class="nav">
             <a href="/">📊 Dashboard</a>
-            <a href="/manage">➕ Manage Cars</a>
+            <a href="/manage">➕ Manage Items</a>
         </div>
         
-        <div class="car-details">
-            <h2>${car.name} ${car.disabled ? '(PAUSED)' : ''}</h2>
-            <div class="price-current">£${car.currentPrice?.toLocaleString() || 'N/A'}</div>
+        <div class="item-details">
+            <h2>${item.name} ${item.disabled ? '(PAUSED)' : ''}</h2>
+            <div class="price-current">£${item.currentPrice?.toLocaleString() || 'N/A'}</div>
             
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-value">${car.priceHistory.length}</div>
+                    <div class="stat-value">${item.priceHistory.length}</div>
                     <div class="stat-label">Price Checks</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">${car.priceHistory.length >= 2 ? 
-                        `£${Math.max(...car.priceHistory.map(h => h.price)).toLocaleString()}` : 'N/A'}
-                    </div>
+                    <div class="stat-value">${highestPrice}</div>
                     <div class="stat-label">Highest Price</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">${car.priceHistory.length >= 2 ? 
-                        `£${Math.min(...car.priceHistory.map(h => h.price)).toLocaleString()}` : 'N/A'}
-                    </div>
+                    <div class="stat-value">${lowestPrice}</div>
                     <div class="stat-label">Lowest Price</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">${car.priceHistory.length >= 2 ? 
-                        `£${Math.abs(Math.max(...car.priceHistory.map(h => h.price)) - Math.min(...car.priceHistory.map(h => h.price))).toLocaleString()}` : 'N/A'}
-                    </div>
+                    <div class="stat-value">${priceRange}</div>
                     <div class="stat-label">Price Range</div>
                 </div>
             </div>
@@ -315,12 +315,13 @@ class DashboardServer {
         
         <div class="info-grid">
             <div class="info-card">
-                <h3>Car Details</h3>
-                <p><strong>Name:</strong> ${car.name}</p>
-                <p><strong>Status:</strong> ${car.disabled ? '⏸️ Paused' : '✅ Active'}</p>
-                <p><strong>Alert Recipients:</strong> ${car.recipients.join(', ')}</p>
-                ${car.thresholds ? `<p><strong>Thresholds:</strong> £${car.thresholds.minAmount}+ or ${car.thresholds.minPercent}%+</p>` : ''}
-                <a href="${car.url}" target="_blank" class="car-link">View Original Listing →</a>
+                <h3>Item Details</h3>
+                <p><strong>Name:</strong> ${item.name}</p>
+                <p><strong>Category:</strong> ${item.category}</p>
+                <p><strong>Status:</strong> ${item.disabled ? '⏸️ Paused' : '✅ Active'}</p>
+                <p><strong>Alert Recipients:</strong> ${item.recipients.join(', ')}</p>
+                ${item.thresholds ? `<p><strong>Thresholds:</strong> £${item.thresholds.minAmount}+ or ${item.thresholds.minPercent}%+</p>` : ''}
+                <a href="${item.url}" target="_blank" class="item-link">View Original Listing →</a>
             </div>
             
             <div class="info-card">
@@ -334,15 +335,16 @@ class DashboardServer {
                         </tr>
                     </thead>
                     <tbody>
-                        ${car.priceHistory.slice(0, 10).map((entry, index) => {
-                            const nextEntry = car.priceHistory[index + 1];
+                        ${item.priceHistory.slice(0, 10).map((entry, index) => {
+                            const nextEntry = item.priceHistory[index + 1];
                             const change = nextEntry ? entry.price - nextEntry.price : 0;
                             const changeText = change === 0 ? '-' : (change < 0 ? `-£${Math.abs(change).toLocaleString()}` : `+£${change.toLocaleString()}`);
+                            const changeColor = change < 0 ? '#dc3545' : change > 0 ? '#28a745' : '#6c757d';
                             return `
                                 <tr>
                                     <td>${new Date(entry.date).toLocaleDateString('en-GB')}</td>
                                     <td>£${entry.price.toLocaleString()}</td>
-                                    <td style="color: ${change < 0 ? '#dc3545' : change > 0 ? '#28a745' : '#6c757d'}">${changeText}</td>
+                                    <td style="color: ${changeColor}">${changeText}</td>
                                 </tr>
                             `;
                         }).join('')}
@@ -354,7 +356,7 @@ class DashboardServer {
 
     <script>
     const ctx = document.getElementById('priceChart').getContext('2d');
-    const priceData = ${JSON.stringify(car.priceHistory.reverse())};
+    const priceData = ${JSON.stringify(item.priceHistory.reverse())};
     
     new Chart(ctx, {
         type: 'line',
@@ -379,7 +381,7 @@ class DashboardServer {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Price History - ${car.name}',
+                    text: 'Price History - ${item.name}',
                     font: { size: 16 }
                 },
                 legend: { display: false }
@@ -417,7 +419,7 @@ class DashboardServer {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MGC Car Tracker Dashboard</title>
+    <title>MGC Price Monitor Dashboard</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; }
         .container { max-width: 1200px; margin: 0 auto; }
@@ -426,21 +428,22 @@ class DashboardServer {
         .nav { text-align: center; margin-bottom: 30px; }
         .nav a { display: inline-block; margin: 0 15px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }
         .nav a:hover { background: #0056b3; }
-        .car-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
-        .car-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .car-card h3 { margin-top: 0; color: #333; }
+        .item-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+        .item-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .item-card h3 { margin-top: 0; color: #333; }
         .price-current { font-size: 24px; font-weight: bold; color: #007bff; margin: 10px 0; }
         .price-change { padding: 5px 10px; border-radius: 4px; font-weight: bold; margin: 10px 0; }
         .price-drop { background-color: #d4edda; color: #155724; }
         .price-rise { background-color: #f8d7da; color: #721c24; }
         .price-same { background-color: #e2e3e5; color: #383d41; }
-        .car-links { margin-top: 15px; }
-        .car-link { display: inline-block; margin-right: 10px; padding: 8px 15px; text-decoration: none; border-radius: 5px; font-size: 14px; }
+        .item-links { margin-top: 15px; }
+        .item-link { display: inline-block; margin-right: 10px; padding: 8px 15px; text-decoration: none; border-radius: 5px; font-size: 14px; }
         .btn-details { background: #007bff; color: white; }
         .btn-details:hover { background: #0056b3; }
         .btn-listing { background: #28a745; color: white; }
         .btn-listing:hover { background: #218838; }
         .recipients { font-size: 12px; color: #6c757d; margin-top: 10px; }
+        .category-badge { display: inline-block; padding: 4px 8px; background: #17a2b8; color: white; border-radius: 3px; font-size: 11px; margin-bottom: 10px; }
         .last-updated { text-align: center; color: #6c757d; font-size: 12px; margin-top: 30px; }
         .schedule-info { text-align: center; background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
     </style>
@@ -448,13 +451,13 @@ class DashboardServer {
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚗 MGC Car Tracker Dashboard</h1>
-            <p>Real-time price monitoring and history</p>
+            <h1>🏷️ MGC Price Monitor Dashboard</h1>
+            <p>Real-time price monitoring across all categories</p>
         </div>
         
         <div class="nav">
             <a href="/">📊 Dashboard</a>
-            <a href="/manage">➕ Manage Cars</a>
+            <a href="/manage">➕ Manage Items</a>
         </div>
         
         <div class="schedule-info">
@@ -465,7 +468,7 @@ class DashboardServer {
             Loading dashboard data...
         </div>
         
-        <div id="dashboard" class="car-grid" style="display: none;"></div>
+        <div id="dashboard" class="item-grid" style="display: none;"></div>
         <div id="lastUpdated" class="last-updated"></div>
     </div>
 
@@ -481,11 +484,11 @@ class DashboardServer {
             const dashboard = document.getElementById('dashboard');
             dashboard.innerHTML = '';
             
-            data.cars.forEach((car, index) => {
+            data.items.forEach((item, index) => {
                 let priceChange = '';
-                if (car.priceHistory.length >= 2) {
-                    const current = car.priceHistory[0].price;
-                    const previous = car.priceHistory[1].price;
+                if (item.priceHistory.length >= 2) {
+                    const current = item.priceHistory[0].price;
+                    const previous = item.priceHistory[1].price;
                     const change = current - previous;
                     
                     if (change < 0) {
@@ -498,17 +501,18 @@ class DashboardServer {
                 }
                 
                 const card = document.createElement('div');
-                card.className = 'car-card';
+                card.className = 'item-card';
                 
                 card.innerHTML = \`
-                    <h3>\${car.name} \${car.disabled ? '(PAUSED)' : ''}</h3>
-                    <div class="price-current">£\${car.currentPrice?.toLocaleString() || 'N/A'}</div>
+                    <div class="category-badge">\${item.category}</div>
+                    <h3>\${item.name} \${item.disabled ? '(PAUSED)' : ''}</h3>
+                    <div class="price-current">£\${item.currentPrice?.toLocaleString() || 'N/A'}</div>
                     \${priceChange}
-                    <div class="car-links">
-                        <a href="/car/\${index}" class="car-link btn-details">📊 View Details</a>
-                        <a href="\${car.url}" target="_blank" class="car-link btn-listing">🔗 View Listing</a>
+                    <div class="item-links">
+                        <a href="/item/\${index}" class="item-link btn-details">📊 View Details</a>
+                        <a href="\${item.url}" target="_blank" class="item-link btn-listing">🔗 View Listing</a>
                     </div>
-                    <div class="recipients">Alerts: \${car.recipients.join(', ')}</div>
+                    <div class="recipients">Alerts: \${item.recipients.join(', ')}</div>
                 \`;
                 
                 dashboard.appendChild(card);
@@ -536,7 +540,7 @@ class DashboardServer {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MGC Car Tracker - Manage Cars</title>
+    <title>MGC Price Monitor - Manage Items</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; }
         .container { max-width: 800px; margin: 0 auto; }
@@ -548,7 +552,7 @@ class DashboardServer {
         .form-container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
-        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
         .form-group textarea { height: 60px; resize: vertical; }
         .form-group small { color: #6c757d; font-size: 12px; }
         .form-row { display: flex; gap: 15px; }
@@ -559,48 +563,63 @@ class DashboardServer {
         .alert { padding: 15px; margin: 15px 0; border-radius: 4px; }
         .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .current-cars { margin-top: 40px; }
-        .car-item { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #007bff; }
-        .car-item.disabled { border-left-color: #6c757d; opacity: 0.7; }
-        .car-item h4 { margin: 0 0 10px 0; color: #333; }
-        .car-item small { color: #6c757d; }
-        .car-actions { margin-top: 10px; }
-        .car-actions button { margin-right: 10px; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; }
+        .current-items { margin-top: 40px; }
+        .item-item { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #007bff; }
+        .item-item.disabled { border-left-color: #6c757d; opacity: 0.7; }
+        .item-item h4 { margin: 0 0 10px 0; color: #333; }
+        .item-item small { color: #6c757d; }
+        .item-actions { margin-top: 10px; }
+        .item-actions button { margin-right: 10px; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; }
         .btn-pause { background: #ffc107; color: #212529; }
         .btn-resume { background: #28a745; color: white; }
         .btn-delete { background: #dc3545; color: white; }
         .btn-pause:hover { background: #e0a800; }
         .btn-resume:hover { background: #218838; }
         .btn-delete:hover { background: #c82333; }
-        .btn-reload { background: #17a2b8; }
+        .btn-reload { background: #17a2b8; color: white; }
         .btn-reload:hover { background: #138496; }
+        .category-badge { display: inline-block; padding: 4px 8px; background: #17a2b8; color: white; border-radius: 3px; font-size: 11px; margin-left: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚗 MGC Car Tracker - Manage Cars</h1>
-            <p>Add new cars to monitor and configure alert settings</p>
+            <h1>🏷️ MGC Price Monitor - Manage Items</h1>
+            <p>Add new items to monitor and configure alert settings</p>
         </div>
         
         <div class="nav">
             <a href="/">📊 Dashboard</a>
-            <a href="/manage">➕ Manage Cars</a>
+            <a href="/manage">➕ Manage Items</a>
         </div>
         
         <div class="form-container">
-            <h2>Add New Car</h2>
-            <form id="addCarForm">
+            <h2>Add New Item</h2>
+            <form id="addItemForm">
                 <div class="form-group">
-                    <label for="carName">Car Name/Description</label>
-                    <input type="text" id="carName" name="name" placeholder="e.g., VW Golf 2019 Blue" required>
-                    <small>Descriptive name to identify this car</small>
+                    <label for="itemName">Item Name/Description</label>
+                    <input type="text" id="itemName" name="name" placeholder="e.g., VW Golf 2019 Blue" required>
+                    <small>Descriptive name to identify this item</small>
                 </div>
                 
                 <div class="form-group">
-                    <label for="carUrl">Car Listing URL</label>
-                    <textarea id="carUrl" name="url" placeholder="https://dealer.com/cars/..." required></textarea>
-                    <small>Full URL from the car dealer website</small>
+                    <label for="category">Category</label>
+                    <select id="category" name="category" required>
+                        <option value="Cars">Cars</option>
+                        <option value="Furniture">Furniture</option>
+                        <option value="Kitchen">Kitchen</option>
+                        <option value="Toys">Toys</option>
+                        <option value="Electronics">Electronics</option>
+                        <option value="Garden">Garden</option>
+                        <option value="Clothing">Clothing</option>
+                        <option value="Sports">Sports</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="itemUrl">Item Listing URL</label>
+                    <textarea id="itemUrl" name="url" placeholder="https://dealer.com/items/..." required></textarea>
+                    <small>Full URL from the dealer website</small>
                 </div>
                 
                 <div class="form-group">
@@ -623,41 +642,41 @@ class DashboardServer {
                     </div>
                 </div>
                 
-                <button type="submit" class="btn" id="submitBtn">Add Car</button>
+                <button type="submit" class="btn" id="submitBtn">Add Item</button>
             </form>
             
             <div id="result"></div>
         </div>
         
-        <div class="current-cars">
+        <div class="current-items">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h2 style="margin: 0;">Currently Monitored Cars</h2>
+                <h2 style="margin: 0;">Currently Monitored Items</h2>
                 <button onclick="reloadConfig()" class="btn btn-reload" style="font-size: 14px; padding: 10px 20px;">
                     🔄 Reload Config
                 </button>
             </div>
-            <div id="currentCars">Loading...</div>
+            <div id="currentItems">Loading...</div>
         </div>
     </div>
 
     <script>
-    document.getElementById('addCarForm').addEventListener('submit', async (e) => {
+    document.getElementById('addItemForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         
         const submitBtn = document.getElementById('submitBtn');
         const resultDiv = document.getElementById('result');
         
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Adding Car...';
+        submitBtn.textContent = 'Adding Item...';
         
         const formData = new FormData(e.target);
-        const carData = Object.fromEntries(formData.entries());
+        const itemData = Object.fromEntries(formData.entries());
         
         try {
-            const response = await fetch('/api/add-car', {
+            const response = await fetch('/api/add-item', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(carData)
+                body: JSON.stringify(itemData)
             });
             
             const result = await response.json();
@@ -665,7 +684,7 @@ class DashboardServer {
             if (result.success) {
                 resultDiv.innerHTML = \`<div class="alert alert-success">\${result.message}</div>\`;
                 e.target.reset();
-                loadCurrentCars();
+                loadCurrentItems();
             } else {
                 resultDiv.innerHTML = \`<div class="alert alert-error">\${result.message}</div>\`;
             }
@@ -674,33 +693,33 @@ class DashboardServer {
         }
         
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Add Car';
+        submitBtn.textContent = 'Add Item';
     });
     
-    async function loadCurrentCars() {
+    async function loadCurrentItems() {
         try {
             const response = await fetch('/api/data');
             const data = await response.json();
             
-            const container = document.getElementById('currentCars');
+            const container = document.getElementById('currentItems');
             
-            if (data.cars.length === 0) {
-                container.innerHTML = '<p>No cars currently being monitored.</p>';
+            if (data.items.length === 0) {
+                container.innerHTML = '<p>No items currently being monitored.</p>';
                 return;
             }
             
-            container.innerHTML = data.cars.map(car => \`
-                <div class="car-item \${car.disabled ? 'disabled' : ''}">
-                    <h4>\${car.name} \${car.disabled ? '(PAUSED)' : ''}</h4>
-                    <p><strong>Current Price:</strong> £\${car.currentPrice?.toLocaleString() || 'N/A'}</p>
-                    <p><strong>Recipients:</strong> \${car.recipients.join(', ')}</p>
-                    \${car.thresholds ? \`<p><strong>Thresholds:</strong> £\${car.thresholds.minAmount}+ or \${car.thresholds.minPercent}%+</p>\` : ''}
-                    <small><a href="\${car.url}" target="_blank">View Listing</a></small>
-                    <div class="car-actions">
-                        <button class="\${car.disabled ? 'btn-resume' : 'btn-pause'}" onclick="toggleCar('\${car.url}')">
-                            \${car.disabled ? '▶️ Resume' : '⏸️ Pause'}
+            container.innerHTML = data.items.map(item => \`
+                <div class="item-item \${item.disabled ? 'disabled' : ''}">
+                    <h4>\${item.name} <span class="category-badge">\${item.category}</span> \${item.disabled ? '(PAUSED)' : ''}</h4>
+                    <p><strong>Current Price:</strong> £\${item.currentPrice?.toLocaleString() || 'N/A'}</p>
+                    <p><strong>Recipients:</strong> \${item.recipients.join(', ')}</p>
+                    \${item.thresholds ? \`<p><strong>Thresholds:</strong> £\${item.thresholds.minAmount}+ or \${item.thresholds.minPercent}%+</p>\` : ''}
+                    <small><a href="\${item.url}" target="_blank">View Listing</a></small>
+                    <div class="item-actions">
+                        <button class="\${item.disabled ? 'btn-resume' : 'btn-pause'}" onclick="toggleItem('\${item.url}')">
+                            \${item.disabled ? '▶️ Resume' : '⏸️ Pause'}
                         </button>
-                        <button class="btn-delete" onclick="deleteCar('\${car.url}', '\${car.name}')">
+                        <button class="btn-delete" onclick="deleteItem('\${item.url}', '\${item.name}')">
                             🗑️ Delete
                         </button>
                     </div>
@@ -708,13 +727,13 @@ class DashboardServer {
             \`).join('');
             
         } catch (error) {
-            document.getElementById('currentCars').innerHTML = '<p>Error loading cars</p>';
+            document.getElementById('currentItems').innerHTML = '<p>Error loading items</p>';
         }
     }
     
-    async function toggleCar(url) {
+    async function toggleItem(url) {
         try {
-            const response = await fetch('/api/toggle-car', {
+            const response = await fetch('/api/toggle-item', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url: url })
@@ -725,7 +744,7 @@ class DashboardServer {
             const resultDiv = document.getElementById('result');
             if (result.success) {
                 resultDiv.innerHTML = \`<div class="alert alert-success">\${result.message}</div>\`;
-                loadCurrentCars();
+                loadCurrentItems();
             } else {
                 resultDiv.innerHTML = \`<div class="alert alert-error">\${result.message}</div>\`;
             }
@@ -734,13 +753,13 @@ class DashboardServer {
         }
     }
     
-    async function deleteCar(url, name) {
+    async function deleteItem(url, name) {
         if (!confirm(\`Are you sure you want to delete "\${name}" from monitoring?\`)) {
             return;
         }
         
         try {
-            const response = await fetch('/api/delete-car', {
+            const response = await fetch('/api/delete-item', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url: url })
@@ -751,7 +770,7 @@ class DashboardServer {
             const resultDiv = document.getElementById('result');
             if (result.success) {
                 resultDiv.innerHTML = \`<div class="alert alert-success">\${result.message}</div>\`;
-                loadCurrentCars();
+                loadCurrentItems();
             } else {
                 resultDiv.innerHTML = \`<div class="alert alert-error">\${result.message}</div>\`;
             }
@@ -774,7 +793,7 @@ class DashboardServer {
             
             if (result.success) {
                 resultDiv.innerHTML = \`<div class="alert alert-success">\${result.message}</div>\`;
-                loadCurrentCars();
+                loadCurrentItems();
             } else {
                 resultDiv.innerHTML = \`<div class="alert alert-error">\${result.message}</div>\`;
             }
@@ -783,7 +802,7 @@ class DashboardServer {
         }
     }
     
-    loadCurrentCars();
+    loadCurrentItems();
     </script>
 </body>
 </html>`;
