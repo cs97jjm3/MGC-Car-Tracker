@@ -377,6 +377,14 @@ James Murrell - Business Analyst specializing in practical automation
 - ✅ Comprehensive failure handling
 - ✅ Weekly and daily summaries
 
+## 🗺️ Future Plans
+
+See [ROADMAP.md](ROADMAP.md) for planned features including:
+- Multi-user authentication
+- Mobile-optimized interface
+- Enhanced analytics
+- API integrations
+
 ---
 
 **Track anything. Save money. Stay informed.** 🏷️
