@@ -93,7 +93,7 @@ class DashboardServer {
       
       const existingItem = config.items.find(item => item.url === newItem.url);
       if (existingItem) {
-        return { success: false, message: 'This item URL is already being tracked' };
+        return { success: false, message: 'This item URL is already being tracked!' };
       }
       
       config.items.push(newItem);

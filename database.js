@@ -12,7 +12,7 @@ class PriceDatabase {
   async initialize() {
     const SQL = await initSqlJs();
     
-    // Load existing database or create new one
+    // Load existing database or create new one 
     if (fs.existsSync(this.dbPath)) {
       const buffer = fs.readFileSync(this.dbPath);
       this.db = new SQL.Database(buffer);

@@ -60,7 +60,7 @@ class EmailNotifier {
       </div>
     `;
 
-    // Use item-specific recipients or fall back to global recipients
+    // Use item-specific recipients or fall back to global recipients 
     const emailRecipients = recipients || this.config.email.recipients;
     
     const mailOptions = {

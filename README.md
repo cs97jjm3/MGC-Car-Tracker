@@ -1,4 +1,6 @@
-# 🏷️ MGC Price Monitor
+# 🏷️ MGC Price Monitor 
+
+> **Note:** Formerly known as "MGC Car Tracker" - renamed in v2.0 to reflect universal item tracking capabilities.
 
 Universal automated price monitoring tool that tracks any items (cars, electronics, furniture, toys, and more) and sends email alerts when prices change. Built for smart shoppers with configurable schedules, thresholds, and visual dashboard.
 
@@ -148,6 +150,64 @@ Click any item name to see:
 - All recorded price changes with dates
 - Current statistics (highest, lowest, range)
 
+## 🌍 Remote Access with ngrok
+
+Access your dashboard from anywhere using ngrok:
+
+### Setup ngrok
+1. **Install ngrok**: Download from https://ngrok.com/download
+2. **Sign up**: Create free account at https://ngrok.com
+3. **Get auth token**: Copy from https://dashboard.ngrok.com/get-started/your-authtoken
+4. **Configure**: Run `ngrok config add-authtoken YOUR_TOKEN`
+
+### Start Remote Access
+```bash
+# In terminal 1: Start MGC Price Monitor
+npm start
+
+# In terminal 2: Create ngrok tunnel
+ngrok http 3739
+```
+
+### Access Dashboard
+ngrok will display a URL like:
+```
+Forwarding   https://abc123.ngrok-free.app -> http://localhost:3739
+```
+
+**Now accessible from anywhere:**
+- Dashboard: `https://abc123.ngrok-free.app/`
+- Management: `https://abc123.ngrok-free.app/manage`
+- Item details: `https://abc123.ngrok-free.app/item/0`
+
+### Security Tips
+- Free ngrok URLs are public - anyone with the URL can access
+- URL changes each time you restart ngrok
+- For permanent URLs and password protection, upgrade to ngrok paid plan
+- Monitor your ngrok dashboard for unusual traffic
+- Stop ngrok (Ctrl+C) when not needed
+
+### Keep Running 24/7
+**Option 1: Two terminals**
+```bash
+# Terminal 1
+npm start
+
+# Terminal 2  
+ngrok http 3739
+```
+
+**Option 2: Background service (Windows)**
+```powershell
+# Save your ngrok URL
+ngrok http 3739 > ngrok.log &
+
+# Or use Windows Task Scheduler to run both on startup
+```
+
+**Option 3: Cloud deployment**
+Deploy to AWS/Azure/Google Cloud for professional 24/7 hosting with proper security.
+
 ## 🛡️ Error Handling
 
 ### Automatic Retry Logic
@@ -216,6 +276,22 @@ Each item can have different watchers:
     "timezone": "Europe/London"
   }
 }
+```
+
+### Change Dashboard Port
+The dashboard runs on port 3739 by default. To change it:
+
+**Edit dashboard.js:**
+```javascript
+// Line 7 in dashboard.js
+this.port = 3739;  // Change to your preferred port
+```
+
+Then restart the application and access at your new port (e.g., `http://localhost:8080`).
+
+**Update ngrok command:**
+```bash
+ngrok http YOUR_PORT
 ```
 
 ### Failure Alert Configuration

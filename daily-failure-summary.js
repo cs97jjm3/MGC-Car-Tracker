@@ -50,7 +50,7 @@ async function sendDailyFailureSummary() {
     });
   });
 
-  // Generate HTML email
+  // Generate HTML email 
   let html = `
     <div style="font-family: Arial, sans-serif; max-width: 800px;">
       <h2 style="color: #dc3545;">📊 Daily Failure Summary</h2>
